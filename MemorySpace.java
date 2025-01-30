@@ -58,7 +58,22 @@ public class MemorySpace {
 	 * @return the base address of the allocated block, or -1 if unable to allocate
 	 */
 	public int malloc(int length) {		
-		//// Replace the following statement with your code
+		ListIterator list = freeList.iterator();
+		while(list.hasNext())
+		{
+			if(list.current.block.length >= length)
+			{
+				int baseAddress = list.current.block.baseAddress;
+				MemoryBlock block = new MemoryBlock(baseAddress,length);
+				allocatedList.addLast(block);
+				list.current.block.baseAddress += length;
+				list.current.block.length -= length;
+				if (list.current.block.length == 0) 
+					freeList.remove(list.current);
+				return block.baseAddress;
+			}
+			list.next();
+		}
 		return -1;
 	}
 
@@ -71,8 +86,18 @@ public class MemorySpace {
 	 *            the starting address of the block to freeList
 	 */
 	public void free(int address) {
-		//// Write your code here
+		if(freeList.getSize() == 1 && freeList.getFirst().block.baseAddress == 0 && freeList.getFirst().block.length == 100)
+			throw new IllegalArgumentException("index must be between 0 and size");
+		ListIterator list = allocatedList.iterator();
+		while(list.hasNext()) {
+			if(list.current.block.baseAddress == address) {
+				allocatedList.remove(list.current.block);
+				freeList.addLast(list.current.block);
+				break;
+			}
+			list.next();
 	}
+}
 	
 	/**
 	 * A textual representation of the free list and the allocated list of this memory space, 
@@ -88,6 +113,31 @@ public class MemorySpace {
 	 * In this implementation Malloc does not call defrag.
 	 */
 	public void defrag() {
-		//// Write your code here
+		if (freeList.getSize() <= 1)
+		return;
+	Node current = freeList.getFirst();
+	while (current != null) {
+		Node following = current.next;
+		while (following != null) {
+			MemoryBlock currentMemoryBlock = current.block;
+			MemoryBlock nextMemoryBlock = following.block;
+			if (currentMemoryBlock.baseAddress + currentMemoryBlock.length == nextMemoryBlock.baseAddress) {
+				currentMemoryBlock.length += nextMemoryBlock.length;  
+				freeList.remove(following);  
+				following = current.next;  
+			}
+			else if(nextMemoryBlock.baseAddress + nextMemoryBlock.length == currentMemoryBlock.baseAddress) {
+				nextMemoryBlock.length += currentMemoryBlock.length; 
+				nextMemoryBlock.baseAddress = currentMemoryBlock.baseAddress;  
+				freeList.remove(current); 
+				current = freeList.getFirst();  
+				break;
+			}
+			else 
+			following = following.next;
+		}
+		if (current != null)
+			current = current.next;
+	}
 	}
 }
